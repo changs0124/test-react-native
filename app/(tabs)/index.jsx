@@ -1,9 +1,10 @@
+import { Ionicons } from '@expo/vector-icons';
 import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import * as Location from 'expo-location';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, Keyboard, KeyboardAvoidingView, Platform, StyleSheet, Text, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
+import { Alert, Keyboard, StyleSheet, Text, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
 import DropDownPicker from 'react-native-dropdown-picker';
 import { TextInput } from 'react-native-gesture-handler';
 import MapView from 'react-native-maps';
@@ -13,7 +14,9 @@ import UserMarker from '../../components/marker/UserMarker';
 
 function index() {
     const ref = useRef(null);
-    const snapPoints = useMemo(() => ['5%'], []);
+    const mapRef = useRef(null);
+
+    const snapPoints = useMemo(() => ['5%', '50%'], []);
 
     const [userCode, setUserCode] = useState(null);
 
@@ -28,6 +31,7 @@ function index() {
     const [isProductsOpen, setIsProductsOpen] = useState(false);
     const [productId, setProductId] = useState(0);
     const [productCount, setProductCount] = useState(1);
+    const [selection, setSelection] = useState({ start: 1, end: 1 });
     const [tempProducts, setTempProducts] = useState([]);
 
     const [delId, setDelId] = useState(0);
@@ -171,7 +175,7 @@ function index() {
                 {
                     accuracy: Location.Accuracy.High,
                     timeInterval: 5000,       // 5초 간격으로 갱신
-                    distanceInterval: 5,     // 5m 이상 이동 시 갱신
+                    distanceInterval: 10,     // 5m 이상 이동 시 갱신
                 },
                 (loca) => {
                     const { latitude, longitude } = loca.coords;
@@ -212,9 +216,13 @@ function index() {
                 `최대 적재량을 초과했습니다.\n최대 ${maxCount}개까지 가능합니다.`
             );
 
-            setProductCount(String(maxCount));
+            const value = String(maxCount);
+            setProductCount(value);
+            setSelection({ start: value.length, end: value.length }); // 👈 커서 맨 뒤로
         } else {
-            setProductCount(count < 1 ? '1' : String(count));
+            const value = count < 1 ? '1' : String(count);
+            setProductCount(value);
+            setSelection({ start: value.length, end: value.length }); // 👈 커서 맨 뒤로
         }
     };
 
@@ -275,36 +283,60 @@ function index() {
             fontWeight: 'bold',
             fontSize: 16,
         },
+        locateButton: {
+            position: 'absolute',
+            top: 55,
+            right: 10,
+            backgroundColor: 'tomato',
+            padding: 12,
+            borderRadius: 30,
+            elevation: 5,
+            shadowColor: '#000',
+            shadowOpacity: 0.2,
+            shadowOffset: { width: 0, height: 2 },
+            shadowRadius: 3,
+            zIndex: 999,
+        },
     });
 
     return (
         <View style={{ flex: 1 }}>
-            <MapView
-                style={StyleSheet.absoluteFillObject}
-                region={location}
-                showsUserLocation={true}
-            >
-                {cargos?.data?.map(cargo => (
-                    <CargoMarker key={cargo?.id} cargo={cargo} />
-                ))}
-                {userLocations?.data?.map(user => (
-                    <UserMarker key={user?.id} user={user} />
-                ))}
-            </MapView>
-            <BottomSheet
-                ref={ref}
-                index={0}
-                snapPoints={snapPoints}
-                enablePanDownToClose={false}
-                enableContentPanningGesture={false} // 중요: 키보드 올라올 때 뷰 이동 허용
-                keyboardBehavior="interactive"
-            >
-                <BottomSheetView style={{ flex: 1 }}>
-                    <KeyboardAvoidingView
-                        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-                        style={{ flex: 1 }}
+            <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+                <View style={{ flex: 1 }}>
+                    <TouchableOpacity style={styles.locateButton} onPress={() => {
+                        if (mapRef.current && location) {
+                            mapRef.current.animateToRegion(location, 800);
+                        }
+                    }}>
+                        <Ionicons name="locate" size={24} color="white" />
+                    </TouchableOpacity>
+                    <MapView
+                        ref={mapRef}
+                        style={StyleSheet.absoluteFillObject}
+                        region={location}
+                        showsUserLocation={true}
                     >
-                        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+                        {cargos?.data?.map(cargo => (
+                            <CargoMarker key={cargo?.id} cargo={cargo} />
+                        ))}
+                        {userLocations?.data?.map(user => (
+                            <UserMarker key={user?.id} user={user} />
+                        ))}
+                    </MapView>
+
+                    <BottomSheet
+                        ref={ref}
+                        index={1}
+                        snapPoints={snapPoints}
+                        enablePanDownToClose={false}
+                        enableContentPanningGesture={true}
+                        keyboardBehavior="interactive"
+                        keyboardBlurBehavior="restore"
+                    >
+                        <BottomSheetView
+                            contentContainerStyle={{ paddingBottom: 40 }}
+                            keyboardShouldPersistTaps="handled"
+                        >
                             <View style={styles.sheetContainer}>
                                 <View style={{ zIndex: 3000, marginBottom: 16 }}>
                                     <Text style={styles.label}>도착지</Text>
@@ -315,6 +347,7 @@ function index() {
                                         setOpen={setIsCargosOpen}
                                         setValue={setCargoId}
                                         setItems={setTempCargos}
+                                        disabled={isTracking}
                                         style={styles.dropdown}
                                         dropDownContainerStyle={styles.dropdownContainer}
                                         textStyle={styles.dropdownText}
@@ -329,6 +362,7 @@ function index() {
                                         setOpen={setIsProductsOpen}
                                         setValue={setProductId}
                                         setItems={setTempProducts}
+                                        disabled={isTracking}
                                         style={styles.dropdown}
                                         dropDownContainerStyle={styles.dropdownContainer}
                                         textStyle={styles.dropdownText}
@@ -341,25 +375,29 @@ function index() {
                                         keyboardType="numeric"
                                         value={String(productCount)}
                                         onChangeText={handleProductCountOnChange}
+                                        onFocus={() => {
+                                            const len = productCount.length;
+                                            setSelection({ start: len, end: len });
+                                        }}
+                                        selection={selection}
                                         placeholder="수량을 입력하세요"
+                                        editable={!isTracking}
                                     />
                                 </View>
-                                {
-                                    isTracking
-                                        ?
-                                        <TouchableOpacity style={styles.button} onPress={handleFinishDeliveryOnPress}>
-                                            <Text style={styles.buttonText}>도착</Text>
-                                        </TouchableOpacity>
-                                        :
-                                        <TouchableOpacity style={styles.button} onPress={handleStartDeliveryOnPress}>
-                                            <Text style={styles.buttonText}>출발</Text>
-                                        </TouchableOpacity>
-                                }
+                                {isTracking ? (
+                                    <TouchableOpacity style={styles.button} onPress={handleFinishDeliveryOnPress}>
+                                        <Text style={styles.buttonText}>도착</Text>
+                                    </TouchableOpacity>
+                                ) : (
+                                    <TouchableOpacity style={styles.button} onPress={handleStartDeliveryOnPress}>
+                                        <Text style={styles.buttonText}>출발</Text>
+                                    </TouchableOpacity>
+                                )}
                             </View>
-                        </TouchableWithoutFeedback>
-                    </KeyboardAvoidingView>
-                </BottomSheetView>
-            </BottomSheet>
+                        </BottomSheetView>
+                    </BottomSheet>
+                </View>
+            </TouchableWithoutFeedback>
         </View>
     );
 }

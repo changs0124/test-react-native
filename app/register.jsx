@@ -12,8 +12,9 @@ import { instance } from "../apis/instance";
 function register() {
     const [isOpen, setIsOpen] = useState(false);
     const [init, setInit] = useState(false);
-    const [deviceId, setDeviceId] = useState(0);
+
     const [userName, setUserName] = useState("");
+    const [deviceId, setDeviceId] = useState(0);
     const [tempDevices, setTempDevices] = useState([]);
 
     const devices = useQuery({
