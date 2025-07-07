@@ -131,6 +131,15 @@ function index() {
                 ...prev,
                 { latitude: location.latitude, longitude: location.longitude }
             ]);
+
+            if (mapRef.current) {
+                mapRef.current.animateToRegion({
+                    latitude: location.latitude,
+                    longitude: location.longitude,
+                    latitudeDelta: 0.01,
+                    longitudeDelta: 0.01,
+                }, 1000);
+            }
         }
     }, [location])
 
@@ -174,8 +183,8 @@ function index() {
             tempLocation = await Location.watchPositionAsync(
                 {
                     accuracy: Location.Accuracy.High,
-                    timeInterval: 5000,       // 5초 간격으로 갱신
-                    distanceInterval: 10,     // 5m 이상 이동 시 갱신
+                    timeInterval: 5000,       
+                    distanceInterval: 10
                 },
                 (loca) => {
                     const { latitude, longitude } = loca.coords;
@@ -187,6 +196,8 @@ function index() {
                         longitudeDelta: 0.01,
                     });
                 }
+
+
             );
         };
 
@@ -218,11 +229,11 @@ function index() {
 
             const value = String(maxCount);
             setProductCount(value);
-            setSelection({ start: value.length, end: value.length }); // 👈 커서 맨 뒤로
+            setSelection({ start: value.length, end: value.length });
         } else {
             const value = count < 1 ? '1' : String(count);
             setProductCount(value);
-            setSelection({ start: value.length, end: value.length }); // 👈 커서 맨 뒤로
+            setSelection({ start: value.length, end: value.length });
         }
     };
 
@@ -313,7 +324,8 @@ function index() {
                     <MapView
                         ref={mapRef}
                         style={StyleSheet.absoluteFillObject}
-                        region={location}
+                        initialRegion={location}
+                        // region={location}
                         showsUserLocation={true}
                     >
                         {cargos?.data?.map(cargo => (

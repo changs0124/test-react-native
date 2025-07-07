@@ -3,7 +3,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import * as Location from 'expo-location';
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
-import { Alert, Button, StyleSheet, Text, View } from "react-native";
+import { Alert, Button, Keyboard, StyleSheet, Text, TouchableWithoutFeedback, View } from "react-native";
 import DropDownPicker from "react-native-dropdown-picker";
 import { TextInput } from "react-native-gesture-handler";
 import uuid from 'react-native-uuid';
@@ -35,7 +35,7 @@ function register() {
 
             const userCode = uuid.v4();
 
-            const res = await instance.post('/user', {
+            await instance.post('/user', {
                 userCode,
                 userName,
                 deviceId,
@@ -51,7 +51,7 @@ function register() {
             router.replace('/')
         },
         onError: (err) => {
-            Alert.alert(err?.message)
+            Alert.alert(err?.response?.data?.message)
         }
     })
 
@@ -119,45 +119,48 @@ function register() {
     })
 
     return (
-        <View style={styles.container}>
-            <View style={styles.box}>
-                <Text style={styles.title}>장치 등록</Text>
-                <View style={{ zIndex: 3000 }}>
-                    <Text style={styles.label}>장치 시리얼 넘버</Text>
-                    <DropDownPicker
-                        open={isOpen}
-                        value={deviceId}
-                        items={tempDevices}
-                        setOpen={setIsOpen}
-                        setValue={setDeviceId}
-                        setItems={setTempDevices}
-                        style={{
-                            backgroundColor: 'white',
-                            borderColor: '#ccc'
-                        }}
-                        dropDownContainerStyle={{
-                            backgroundColor: 'white',
-                            borderColor: '#ccc',
-                        }}
-                        textStyle={{
-                            color: 'black',
-                        }}
-                    />
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+
+            <View style={styles.container}>
+                <View style={styles.box}>
+                    <Text style={styles.title}>장치 등록</Text>
+                    <View style={{ zIndex: 3000 }}>
+                        <Text style={styles.label}>장치 시리얼 넘버</Text>
+                        <DropDownPicker
+                            open={isOpen}
+                            value={deviceId}
+                            items={tempDevices}
+                            setOpen={setIsOpen}
+                            setValue={setDeviceId}
+                            setItems={setTempDevices}
+                            style={{
+                                backgroundColor: 'white',
+                                borderColor: '#ccc'
+                            }}
+                            dropDownContainerStyle={{
+                                backgroundColor: 'white',
+                                borderColor: '#ccc',
+                            }}
+                            textStyle={{
+                                color: 'black',
+                            }}
+                        />
+                    </View>
+                    <View>
+                        <Text style={styles.label}>장치 이름</Text>
+                        <TextInput
+                            value={userName}
+                            onChangeText={setUserName}
+                            placeholder="장치 이름을 입력하세요."
+                            style={styles.input}
+                        />
+                    </View>
+                    <View style={styles.button}>
+                        <Button title="장치 등록" onPress={() => register.mutateAsync({ userName: userName, deviceId: deviceId }).catch(() => { })} />
+                    </View>
                 </View>
-                <View>
-                    <Text style={styles.label}>장치 이름</Text>
-                    <TextInput
-                        value={userName}
-                        onChangeText={setUserName}
-                        placeholder="장치 이름을 입력하세요."
-                        style={styles.input}
-                    />
-                </View>
-                <View style={styles.button}>
-                        <Button title="장치 등록" onPress={() => register.mutateAsync({ userName: userName, deviceId: deviceId}).catch(() => {})}/>
-                </View>
-            </View>
-        </View>
+            </View >
+        </TouchableWithoutFeedback>
     );
 }
 
