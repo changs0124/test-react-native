@@ -8,6 +8,7 @@ import DropDownPicker from "react-native-dropdown-picker";
 import { TextInput } from "react-native-gesture-handler";
 import uuid from 'react-native-uuid';
 import { instance } from "../apis/instance";
+import { styles } from "../styles/appRegister";
 
 function register() {
     const [isOpen, setIsOpen] = useState(false);
