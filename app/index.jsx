@@ -1,8 +1,8 @@
-import 'react-native-gesture-handler';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useQuery } from '@tanstack/react-query';
 import { Redirect } from 'expo-router';
 import React, { useEffect, useState } from 'react';
+import 'react-native-gesture-handler';
 import { instance } from "../apis/instance";
 
 function index() {

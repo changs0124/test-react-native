@@ -11,9 +11,9 @@ function _layout() {
         <GestureHandlerRootView style={{ flex: 1 }}>
             <ReducedMotionConfig mode={ReduceMotion.Never} />
             <SafeAreaProvider>
-                    <QueryClientProvider client={queryClient}>
-                        <Stack screenOptions={{ headerShown: false }} />
-                    </QueryClientProvider>
+                <QueryClientProvider client={queryClient}>
+                    <Stack screenOptions={{ headerShown: false }} />
+                </QueryClientProvider>
             </SafeAreaProvider>
         </GestureHandlerRootView>
     );

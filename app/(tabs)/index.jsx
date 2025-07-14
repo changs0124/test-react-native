@@ -7,10 +7,11 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Keyboard, StyleSheet, Text, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
 import DropDownPicker from 'react-native-dropdown-picker';
 import { TextInput } from 'react-native-gesture-handler';
-import MapView from 'react-native-maps';
+import MapView, { Polyline } from 'react-native-maps';
 import { instance } from '../../apis/instance';
 import CargoMarker from '../../components/marker/CargoMarker';
 import UserMarker from '../../components/marker/UserMarker';
+import { styles } from '../../styles/tabsIndex';
 
 function index() {
     const ref = useRef(null);
@@ -23,6 +24,7 @@ function index() {
     const [location, setLocation] = useState(null);
 
     const [isTracking, setIsTracking] = useState(false);
+    const [trackingPath, setTrackingPath] = useState([]);
 
     const [isCargosOpen, setIsCargosOpen] = useState(false);
     const [cargoId, setCargoId] = useState(0);
@@ -31,15 +33,14 @@ function index() {
     const [isProductsOpen, setIsProductsOpen] = useState(false);
     const [productId, setProductId] = useState(0);
     const [productCount, setProductCount] = useState(1);
-    const [selection, setSelection] = useState({ start: 1, end: 1 });
     const [tempProducts, setTempProducts] = useState([]);
+
+    const [selection, setSelection] = useState({ start: 1, end: 1 });
 
     const [delId, setDelId] = useState(0);
 
-    const [trackingPath, setTrackingPath] = useState([]);
-
     const user = useQuery({
-        queryKey: ['user'],
+        queryKey: ['user', userCode],
         queryFn: async () => await instance.get(`/user/location/${userCode}`).then(res => res.data),
         enabled: !!userCode,
         retry: 0,
@@ -118,6 +119,46 @@ function index() {
     }, []);
 
     useEffect(() => {
+        let tempLocation;
+
+        const startWatching = async () => {
+            const { status } = await Location.requestForegroundPermissionsAsync();
+            if (status !== 'granted') {
+                Alert.alert('위치 권한이 거부되었습니다');
+                return;
+            }
+
+            tempLocation = await Location.watchPositionAsync(
+                {
+                    accuracy: Location.Accuracy.High,
+                    timeInterval: 5000,
+                    distanceInterval: 10
+                },
+                (loca) => {
+                    const { latitude, longitude } = loca.coords;
+
+                    setLocation({
+                        latitude,
+                        longitude,
+                        latitudeDelta: 0.01,
+                        longitudeDelta: 0.01,
+                    });
+                }
+
+
+            );
+        };
+
+        startWatching();
+
+        return () => {
+            if (tempLocation) {
+                tempLocation.remove();
+            }
+        };
+    }, []);
+
+    useEffect(() => {
         if (!location || !userCode) return;
 
         updateLocation.mutate({
@@ -170,46 +211,6 @@ function index() {
         }
     }, [products?.data])
 
-    useEffect(() => {
-        let tempLocation;
-
-        const startWatching = async () => {
-            const { status } = await Location.requestForegroundPermissionsAsync();
-            if (status !== 'granted') {
-                Alert.alert('위치 권한이 거부되었습니다');
-                return;
-            }
-
-            tempLocation = await Location.watchPositionAsync(
-                {
-                    accuracy: Location.Accuracy.High,
-                    timeInterval: 5000,       
-                    distanceInterval: 10
-                },
-                (loca) => {
-                    const { latitude, longitude } = loca.coords;
-
-                    setLocation({
-                        latitude,
-                        longitude,
-                        latitudeDelta: 0.01,
-                        longitudeDelta: 0.01,
-                    });
-                }
-
-
-            );
-        };
-
-        startWatching();
-
-        return () => {
-            if (tempLocation) {
-                tempLocation.remove();
-            }
-        };
-    }, []);
-
     const handleProductCountOnChange = (data) => {
         const count = Number(data);
 
@@ -247,69 +248,6 @@ function index() {
         await finishDelivery.mutateAsync().catch(() => { })
     }
 
-    const styles = StyleSheet.create({
-        sheetContainer: {
-            padding: 20,
-            backgroundColor: 'white',
-        },
-        label: {
-            fontWeight: 'bold',
-            fontSize: 14,
-            marginBottom: 6,
-            color: '#333',
-        },
-        dropdown: {
-            backgroundColor: 'white',
-            borderColor: '#ccc',
-            zIndex: 1,
-        },
-        dropdownContainer: {
-            backgroundColor: 'white',
-            borderColor: '#ccc',
-            zIndex: 1000,
-        },
-        dropdownText: {
-            color: 'black',
-        },
-        input: {
-            borderColor: '#cccccc',
-            borderWidth: 1,
-            borderRadius: 6,
-            paddingHorizontal: 12,
-            paddingVertical: 10,
-            backgroundColor: 'white',
-            color: '#000000',
-            fontSize: 14,
-            textAlign: 'right'
-        },
-        button: {
-            backgroundColor: '#1E90FF',
-            paddingVertical: 14,
-            borderRadius: 8,
-            alignItems: 'center',
-            elevation: 2,
-        },
-        buttonText: {
-            color: 'white',
-            fontWeight: 'bold',
-            fontSize: 16,
-        },
-        locateButton: {
-            position: 'absolute',
-            top: 55,
-            right: 10,
-            backgroundColor: 'tomato',
-            padding: 12,
-            borderRadius: 30,
-            elevation: 5,
-            shadowColor: '#000',
-            shadowOpacity: 0.2,
-            shadowOffset: { width: 0, height: 2 },
-            shadowRadius: 3,
-            zIndex: 999,
-        },
-    });
-
     return (
         <View style={{ flex: 1 }}>
             <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
@@ -325,9 +263,13 @@ function index() {
                         ref={mapRef}
                         style={StyleSheet.absoluteFillObject}
                         initialRegion={location}
-                        // region={location}
                         showsUserLocation={true}
                     >
+                        <Polyline 
+                            coordinates={trackingPath}
+                            strokeColor='#00FF00'
+                            strokeWidth={3}
+                        />
                         {cargos?.data?.map(cargo => (
                             <CargoMarker key={cargo?.id} cargo={cargo} />
                         ))}

@@ -3,7 +3,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import * as Location from 'expo-location';
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
-import { Alert, Button, Keyboard, StyleSheet, Text, TouchableWithoutFeedback, View } from "react-native";
+import { Alert, Button, Keyboard, Text, TouchableWithoutFeedback, View } from "react-native";
 import DropDownPicker from "react-native-dropdown-picker";
 import { TextInput } from "react-native-gesture-handler";
 import uuid from 'react-native-uuid';
@@ -67,56 +67,6 @@ function register() {
             setInit(true);
         }
     }, [devices?.data, init])
-
-    const styles = StyleSheet.create({
-        container: {
-            flex: 1,
-            justifyContent: 'center', // 화면 중앙 정렬
-            alignItems: 'center',
-            backgroundColor: '#f2f2f2',
-        },
-        box: {
-            width: '85%',
-            padding: 20,
-            borderWidth: 1,
-            borderColor: '#ccc',
-            borderRadius: 10,
-            backgroundColor: 'white',
-        },
-        title: {
-            fontSize: 22,
-            fontWeight: 'bold',
-            marginBottom: 20,
-            textAlign: 'center',
-        },
-        label: {
-            marginTop: 10,
-            marginBottom: 4,
-            fontSize: 14,
-            fontWeight: '600',
-        },
-        pickerWrapper: {
-            borderWidth: 1,
-            borderColor: '#ccc',
-            borderRadius: 6,
-            overflow: 'hidden',
-        },
-        picker: {
-            height: 44,
-            width: '100%',
-        },
-        input: {
-            borderWidth: 1,
-            borderColor: '#ccc',
-            borderRadius: 6,
-            paddingHorizontal: 10,
-            height: 44,
-            marginTop: 4,
-        },
-        button: {
-            marginTop: 20,
-        },
-    })
 
     return (
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
